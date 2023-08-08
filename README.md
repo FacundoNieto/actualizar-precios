@@ -8,3 +8,5 @@ SISCON_HOST=
 SISCON_USER=
 SISCON_PASSWORD=
 SISCON_DATABASE=
+
+borrar esta línea, es sólo para probar
