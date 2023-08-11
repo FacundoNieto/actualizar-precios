@@ -8,34 +8,28 @@ from dotenv import load_dotenv
 # Cargar variables de entorno desde el archivo .env
 load_dotenv()
 
+ZAFIRO_HOST = os.getenv("ZAFIRO_HOST")
+ZAFIRO_USER = os.getenv("ZAFIRO_USER")
+ZAFIRO_PASSWORD = os.getenv("ZAFIRO_PASSWORD")
+ZAFIRO_DATABASE = os.getenv("ZAFIRO_DATABASE")
 
-def conectar_zafiro_db():
+SISCON_HOST = os.getenv("SISCON_HOST")
+SISCON_USER = os.getenv("SISCON_USER")
+SISCON_PASSWORD = os.getenv("SISCON_PASSWORD")
+SISCON_DATABASE = os.getenv("SISCON_DATABASE")
+
+def conectar_db(HOST, USER, PASSWORD, DATABASE):
     try:
-        zafiro_conn = pymysql.connect(
-            host=os.getenv("ZAFIRO_HOST"),
-            user=os.getenv("ZAFIRO_USER"),
-            password=os.getenv("ZAFIRO_PASSWORD"),
-            database=os.getenv("ZAFIRO_DATABASE")
+        conn = pymysql.connect(
+            host = HOST,
+            user = USER,
+            password = PASSWORD,
+            database = DATABASE
         )
-        return zafiro_conn
+        return conn
     except pymysql.Error as e:
-        print("\nError al conectarse a zafiro \n\n", e)
+        print(f"\nError al conectarse a {DATABASE} \n\n",e)
         raise
-
-
-def conectar_siscon_db():
-    try:
-        siscon_conn = pymysql.connect(
-            host=os.getenv("SISCON_HOST"),
-            user=os.getenv("SISCON_USER"),
-            password=os.getenv("SISCON_PASSWORD"),
-            database=os.getenv("SISCON_DATABASE")
-        )
-        return siscon_conn
-    except pymysql.Error as e:
-        print("\nError al conectarse a siscon\n\n", e)
-        raise
-
 
 def verificar_y_actualizar_precios():
     try:
@@ -44,12 +38,11 @@ def verificar_y_actualizar_precios():
             precios_actualizados = json.load(json_file)
 
         # Configuración de la conexión a la base de datos siscon
-        siscon_conn = conectar_siscon_db()
-        
+        siscon_conn = conectar_db(SISCON_HOST, SISCON_USER, SISCON_PASSWORD, SISCON_DATABASE)
         siscon_cursor = siscon_conn.cursor()
 
         # Consultar la tabla "articuloszafiro" en "siscon" y comparar con los precios del JSON
-        siscon_cursor.execute("SELECT id_articulo, pcio_com_siva, pcio_vta_siva FROM articuloszafiro_otracopia")
+        siscon_cursor.execute("SELECT id_articulo, pcio_com_siva, pcio_vta_siva FROM articuloszafiro")
         resultados_siscon = siscon_cursor.fetchall()
 
         # art_actualizados = []
@@ -59,7 +52,7 @@ def verificar_y_actualizar_precios():
                 precio_actualizado = precios_actualizados[id_articulo]
                 if precio_actualizado["pcio_com_siva"] != pcio_com_siva or precio_actualizado["pcio_vta_siva"] != pcio_vta_siva:
                     # Realizar la actualización en la base de datos siscon
-                    update_query = "UPDATE articuloszafiro_otracopia SET pcio_com_siva = %s, pcio_vta_siva = %s WHERE id_articulo = %s"
+                    update_query = "UPDATE articuloszafiro SET pcio_com_siva = %s, pcio_vta_siva = %s WHERE id_articulo = %s"
                     siscon_cursor.execute(update_query, (precio_actualizado["pcio_com_siva"], precio_actualizado["pcio_vta_siva"], id_articulo))
                     siscon_conn.commit()
                     #art_actualizados.append(id_articulo)
@@ -75,7 +68,9 @@ def verificar_y_actualizar_precios():
 def generar_json_precios_actualizados():
     try:
         # Configuración de la conexión a la base de datos zafiro_dro
-        zafiro_conn = conectar_zafiro_db()
+        zafiro_conn = None
+        zafiro_cursor = None
+        zafiro_conn = conectar_db(ZAFIRO_HOST, ZAFIRO_USER, ZAFIRO_PASSWORD, ZAFIRO_DATABASE)
         zafiro_cursor = zafiro_conn.cursor()
 
         # Consulta para obtener los precios actualizados
@@ -92,12 +87,13 @@ def generar_json_precios_actualizados():
             json.dump(precios_actualizados, json_file)
     
     finally:
-        zafiro_cursor.close()
-        zafiro_conn.close()
+        if zafiro_cursor:
+            zafiro_cursor.close()
+        if zafiro_conn:
+            zafiro_conn.close()
 
     verificar_y_actualizar_precios()
     
-
 #primero ejecuto la función y luego temporizo
 generar_json_precios_actualizados()
 schedule.every(6).hours.do(generar_json_precios_actualizados)
