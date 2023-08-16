@@ -96,9 +96,12 @@ def generar_json_precios_actualizados():
 
     verificar_y_actualizar_precios()
     
+schedule.every().day.at("18:00").do(generar_json_precios_actualizados)
+schedule.every().day.at("06:00").do(generar_json_precios_actualizados)
+
 #primero ejecuto la función y luego temporizo
-generar_json_precios_actualizados()
-schedule.every(12).hours.do(generar_json_precios_actualizados)
+# generar_json_precios_actualizados()
+# schedule.every(12).hours.do(generar_json_precios_actualizados)
 
 #cada 15 segundos para pruebas
 #schedule.every(15).seconds.do(generar_json_precios_actualizados)
