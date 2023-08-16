@@ -57,6 +57,7 @@ def verificar_y_actualizar_precios():
                     siscon_conn.commit()
                     #art_actualizados.append(id_articulo)
                     actualizaciones += 1
+                    print(f"articulo {id_articulo} fue actualizado")
 
         # print(f"Articulos actualizados: {art_actualizados}")
         print(f"Actualizaciones realizadas: {actualizaciones}")
@@ -86,6 +87,7 @@ def generar_json_precios_actualizados():
         with open("precios_actualizados.json", "w") as json_file:
             json.dump(precios_actualizados, json_file)
     
+        print("\tJSON creado\n")
     finally:
         if zafiro_cursor:
             zafiro_cursor.close()
@@ -96,7 +98,7 @@ def generar_json_precios_actualizados():
     
 #primero ejecuto la función y luego temporizo
 generar_json_precios_actualizados()
-schedule.every(6).hours.do(generar_json_precios_actualizados)
+schedule.every(12).hours.do(generar_json_precios_actualizados)
 
 #cada 15 segundos para pruebas
 #schedule.every(15).seconds.do(generar_json_precios_actualizados)
