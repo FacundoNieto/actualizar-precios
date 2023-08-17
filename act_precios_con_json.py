@@ -33,6 +33,10 @@ def conectar_db(HOST, USER, PASSWORD, DATABASE):
 
 def verificar_y_actualizar_precios():
     try:
+        # Registrar el tiempo de inicio
+        tiempo_inicio = time.time()
+        tiempo_inicio_legible = time.strftime('%H:%M:%S', time.localtime(tiempo_inicio))
+        
         # Cargar el archivo JSON con los precios actualizados en un diccionario
         with open("precios_actualizados.json", "r") as json_file:
             precios_actualizados = json.load(json_file)
@@ -41,26 +45,36 @@ def verificar_y_actualizar_precios():
         siscon_conn = conectar_db(SISCON_HOST, SISCON_USER, SISCON_PASSWORD, SISCON_DATABASE)
         siscon_cursor = siscon_conn.cursor()
 
-        # Consultar la tabla "articuloszafiro" en "siscon" y comparar con los precios del JSON
-        siscon_cursor.execute("SELECT id_articulo, pcio_com_siva, pcio_vta_siva FROM articuloszafiro")
+        # Consultar la tabla "articulosZafiro" en "siscon" y comparar con los precios del JSON
+        siscon_cursor.execute("SELECT id_articulo, pcio_com_siva, pcio_vta_siva FROM articulosZafiro")
         resultados_siscon = siscon_cursor.fetchall()
 
-        # art_actualizados = []
         actualizaciones = 0
         for id_articulo, pcio_com_siva, pcio_vta_siva in resultados_siscon:
             if id_articulo in precios_actualizados:
                 precio_actualizado = precios_actualizados[id_articulo]
                 if precio_actualizado["pcio_com_siva"] != pcio_com_siva or precio_actualizado["pcio_vta_siva"] != pcio_vta_siva:
                     # Realizar la actualización en la base de datos siscon
-                    update_query = "UPDATE articuloszafiro SET pcio_com_siva = %s, pcio_vta_siva = %s WHERE id_articulo = %s"
+                    update_query = "UPDATE articulosZafiro SET pcio_com_siva = %s, pcio_vta_siva = %s WHERE id_articulo = %s"
                     siscon_cursor.execute(update_query, (precio_actualizado["pcio_com_siva"], precio_actualizado["pcio_vta_siva"], id_articulo))
                     siscon_conn.commit()
-                    #art_actualizados.append(id_articulo)
                     actualizaciones += 1
                     print(f"articulo {id_articulo} fue actualizado")
-
-        # print(f"Articulos actualizados: {art_actualizados}")
-        print(f"Actualizaciones realizadas: {actualizaciones}")
+        
+        tiempo_final = time.time()
+        tiempo_final_legible = time.strftime('%H:%M:%S', time.localtime(tiempo_final))
+        tiempo_transcurrido = tiempo_final - tiempo_inicio
+        
+        # Calcular las horas, minutos y segundos
+        horas = int(tiempo_transcurrido // 3600)
+        minutos = int((tiempo_transcurrido % 3600) // 60)
+        segundos = int(tiempo_transcurrido % 60)
+        # Formatear el tiempo transcurrido
+        tiempo_transcurrido_legible = f"{horas:02}:{minutos:02}:{segundos:02}"
+        
+        print(f"\nActualizaciones realizadas: {actualizaciones}")
+        print(f"Tiempo de actualización: {tiempo_transcurrido_legible}\nHora de inicio: {tiempo_inicio_legible}\nHora de finalización: {tiempo_final_legible}")
+    
     finally:
         siscon_cursor.close()
         siscon_conn.close()
@@ -87,7 +101,7 @@ def generar_json_precios_actualizados():
         with open("precios_actualizados.json", "w") as json_file:
             json.dump(precios_actualizados, json_file)
     
-        print("\tJSON creado\n")
+        print("\nJSON creado\n")
     finally:
         if zafiro_cursor:
             zafiro_cursor.close()
