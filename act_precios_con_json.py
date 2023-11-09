@@ -230,7 +230,7 @@ def verificar_postdatada():
         finally:
             siscon_cursor.close()
             siscon_conn.close()
-            print('\nPedidos actualizados:', actualizados)
+            print('\nPostdatadas actualizados:', actualizados)
             print("Fecha y hora:", datetime.now().strftime("%d/%m/%Y %H:%M:%S"), '\n')
 
 schedule.every().day.at("18:00").do(generar_json_precios_actualizados)
